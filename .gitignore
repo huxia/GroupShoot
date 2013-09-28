@@ -1,0 +1,10 @@
+Pods/*
+Podfile.lock
+DerivedData
+DerivedData/*
+Build
+Build/*
+.DS_Store
+GroupShoot.xcodeproj/project.xcworkspace/xcuserdata/*
+GroupShoot.xcworkspace/xcuserdata/*
+GroupShoot.xcodeproj/xcuserdata/*
