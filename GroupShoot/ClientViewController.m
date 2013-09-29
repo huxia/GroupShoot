@@ -9,12 +9,17 @@
 #import "ClientViewController.h"
 #import "ASIFormDataRequest.h"
 #import "RegexKitLite.h"
+#import "Const.h"
 @interface ClientViewController ()<GKSessionDelegate,ASIHTTPRequestDelegate>{
 	
 	GKSession* session;
 	AVCaptureSession* avSession;
 	AVCaptureDeviceInput* avInput;
 	AVCaptureStillImageOutput *avStillImageOutput;
+	
+	CGFloat settingsQuality;
+	NSString* settingsAddress;
+	NSString* cachedUUID;
 }
 
 @end
@@ -24,12 +29,12 @@
 -(void)load{
 	{
 		session = [[GKSession alloc] initWithSessionID:nil displayName:nil sessionMode:GKSessionModePeer];
-		session.disconnectTimeout = 5;
 		self.title = [NSString stringWithFormat:@"Connecting - %@", [session displayName]];
 		[session setDataReceiveHandler:self withContext:nil];
 		session.delegate = self;
+		session.disconnectTimeout = 5;
 		session.available = YES;
-		
+		[self log:@"load"];
 		
 		avSession = [[AVCaptureSession alloc] init];
 		avSession.sessionPreset = AVCaptureSessionPresetMedium;
@@ -65,9 +70,10 @@
 }
 -(void)unload{
 	{
+		[self log:@"unload"];
 		session.delegate = nil;
-		session.available = NO;
 		[session disconnectFromAllPeers];
+		session.available = NO;
 		session = nil;
 	}
 	{
@@ -108,6 +114,15 @@
 	[self load];
 	[self unload];
 }
+//-(void)connectPeer:(NSString*)peerID{
+//	if ([[session displayNameForPeer:peerID] isEqualToString:SERVER_NAME]) {
+//		[self log:[NSString stringWithFormat:@"connect to server: %@", peerID]];
+//		[session connectToPeer:peerID withTimeout:5.0];
+//		
+//		[self performSelector:@selector(reload) withObject:nil afterDelay:1.0];
+//	}
+//	
+//}
 - (void)session:(GKSession *)s peer:(NSString *)peerID didChangeState:(GKPeerConnectionState)state{
 	if (state == GKPeerStateDisconnected) {
 		self.title = [NSString stringWithFormat:@"Disconnected - %@", [session displayName]];
@@ -116,19 +131,43 @@
 	}else if(state == GKPeerStateConnected){
 		[self log:[NSString stringWithFormat:@"connected with %@.", peerID]];
 		self.title = [NSString stringWithFormat:@"Connected - %@", [session displayName]];
+	}else if(state == GKPeerStateAvailable){
+		NSString* displayName = [s displayNameForPeer:peerID];
+		if ([[displayName substringToIndex:[DIRECT_TAKE_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_TAKE_DISPLAY_NAME_PREFIX]) {
+			NSString* uuid = [displayName substringFromIndex:[DIRECT_TAKE_DISPLAY_NAME_PREFIX length]];
+			[self log:[NSString stringWithFormat:@"receive broadcast take command: %@", uuid]];
+			if (settingsAddress) {
+				cachedUUID = nil;
+				[self command:[NSString stringWithFormat:@"%@ TAKE %f|%@", uuid, settingsQuality, settingsAddress]];
+			}else{
+				cachedUUID = uuid;
+			}
+		}else if ([[displayName substringToIndex:[DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_SETTINGS_DISPLAY_NAME_PREFIX]) {
+			int qualityLen = 3;
+			settingsQuality = [[displayName substringWithRange:NSMakeRange([DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length], qualityLen)] floatValue];
+			settingsAddress = [displayName substringFromIndex:[DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length]+qualityLen];
+			[self log:[NSString stringWithFormat:@"receive settings config: %f %@", settingsQuality, settingsAddress]];
+			if (cachedUUID) {
+				
+				[self command:[NSString stringWithFormat:@"%@ TAKE %f|%@", settingsAddress, settingsQuality, settingsAddress]];
+				cachedUUID = nil;
+			}
+		}
 	}
 	
 }
 
 - (void)session:(GKSession *)s didReceiveConnectionRequestFromPeer:(NSString *)peerID{
 	[self log:[NSString stringWithFormat:@"didReceiveConnectionRequestFromPeer: %@", peerID]];
-	[s acceptConnectionFromPeer:peerID error:nil];
+	if ([[s displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME]) {
+		[s acceptConnectionFromPeer:peerID error:nil];
+	}
 }
 
 - (void)session:(GKSession *)s connectionWithPeerFailed:(NSString *)peerID withError:(NSError *)error{
 	[self log:[NSString stringWithFormat:@"connectionWithPeerFailed: %@ %@", peerID, error]];
 	self.title = [NSString stringWithFormat:@"Error - %@", [session displayName]];
-	[self performSelector:@selector(reload) withObject:nil afterDelay:1.0];
+	//[self performSelector:@selector(connectPeer:) withObject:peerID afterDelay:0.5];
 }
 - (void)session:(GKSession *)s didFailWithError:(NSError *)error{
 	[self log:[NSString stringWithFormat:@"didFailWithError: %@", error]];
@@ -201,8 +240,18 @@
 			 NSString* serverAddress = [[commandArgs componentsSeparatedByString:@"|"] objectAtIndex:1];
 			 
 			 NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageSampleBuffer];
+			 UIImage* image = nil;
+#ifdef __OPTIMIZE__
+			 if (!image) {
+				 image = [UIImage imageWithData:imageData];
+			 }
+			 UIImageWriteToSavedPhotosAlbum(image, nil, nil, NULL);
+#endif
 			 if (imageQuality < 0.99) {
-				 imageData = UIImageJPEGRepresentation([UIImage imageWithData:imageData], imageQuality);
+				 if (!image) {
+					 image = [UIImage imageWithData:imageData];
+				 }
+				 imageData = UIImageJPEGRepresentation(image, imageQuality);
 			 }
 			 NSData* dataToUpload = imageData;
 			 [self upload:[NSDictionary dictionaryWithObjectsAndKeys:meta, @"meta",dataToUpload, @"data", serverAddress, @"serverAddress", nil]];

@@ -8,6 +8,7 @@
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="HostViewController">
             <connections>
                 <outlet property="clients" destination="tzN-PN-iul" id="IJj-Gs-WPe"/>
+                <outlet property="imageQuality" destination="YDr-KC-tFo" id="n4z-sp-Cg8"/>
                 <outlet property="serverAddress" destination="rCf-hj-hkh" id="vyf-ej-V2V"/>
                 <outlet property="view" destination="1" id="3"/>
             </connections>
@@ -22,6 +23,9 @@
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                     <textInputTraits key="textInputTraits"/>
+                    <connections>
+                        <action selector="broadcaseSettings:" destination="-1" eventType="valueChanged" id="FCe-eQ-J1d"/>
+                    </connections>
                 </textField>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="asQ-4v-tDU">
                     <rect key="frame" x="20" y="114" width="280" height="30"/>
@@ -45,6 +49,9 @@
                 <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.90000000000000002" minValue="0.0" maxValue="1" id="YDr-KC-tFo">
                     <rect key="frame" x="184" y="58" width="118" height="34"/>
                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                    <connections>
+                        <action selector="broadcaseSettings:" destination="-1" eventType="valueChanged" id="XhU-wg-vdb"/>
+                    </connections>
                 </slider>
                 <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Image Quality" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="Kyi-6h-IqR">
                     <rect key="frame" x="20" y="64" width="132" height="21"/>

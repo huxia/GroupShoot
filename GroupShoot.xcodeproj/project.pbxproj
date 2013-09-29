@@ -26,7 +26,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		5140817D17F689330009D743 /* GroupShoot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = GroupShoot.app; path = GroupShoot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5108563317F882EB00E8DBB9 /* Const.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Const.h; sourceTree = "<group>"; };
+		5140817D17F689330009D743 /* GroupShoot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GroupShoot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5140818017F689330009D743 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		5140818217F689330009D743 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		5140818417F689330009D743 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -118,8 +119,8 @@
 				514081B417F6897B0009D743 /* ClientViewController.h */,
 				514081B517F6897B0009D743 /* ClientViewController.m */,
 				514081B617F6897B0009D743 /* ClientViewController.xib */,
+				5108563317F882EB00E8DBB9 /* Const.h */,
 			);
-			name = GroupShoot;
 			path = GroupShoot;
 			sourceTree = "<group>";
 		};

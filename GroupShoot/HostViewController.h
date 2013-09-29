@@ -13,4 +13,5 @@
 @property (nonatomic, strong) IBOutlet UITableView* clients;
 @property (nonatomic, strong) IBOutlet UISlider* imageQuality;
 -(IBAction)send:(id)sender;
+-(IBAction)broadcaseSettings:(id)sender;
 @end

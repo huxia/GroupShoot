@@ -7,9 +7,11 @@
 //
 
 #import "HostViewController.h"
-
+#import "Const.h"
 @interface HostViewController ()<GKSessionDelegate>{
 	GKSession* session;
+	GKSession* broadcaseTakeActionSession;
+	GKSession* broadcaseSettingsSession;
 }
 
 @end
@@ -18,18 +20,20 @@
 @synthesize serverAddress, clients, imageQuality;
 -(void)load{
 	
-	session = [[GKSession alloc] initWithSessionID:nil displayName:nil sessionMode:GKSessionModePeer];
-	session.disconnectTimeout = 5;
-	self.title = [NSString stringWithFormat:@"Host - %@", [session displayName]];
+	session = [[GKSession alloc] initWithSessionID:nil displayName:SERVER_DISPLAY_NAME sessionMode:GKSessionModePeer];
+	
+	self.title = @"Host";
 	[session setDataReceiveHandler:self withContext:nil];
 	session.delegate = self;
+	session.disconnectTimeout = 5;
 	session.available = YES;
 }
 -(void)unload{
 	session.delegate = nil;
-	session.available = NO;
 	[session disconnectFromAllPeers];
+	session.available = NO;
 	session = nil;
+	[self shutdownBoardcaseSession];
 }
 - (void)dealloc
 {
@@ -42,6 +46,7 @@
     NSString *uuidStr = (__bridge_transfer NSString *)CFUUIDCreateString(kCFAllocatorDefault, uuid);
     CFRelease(uuid);
 	
+	uuidStr = [uuidStr stringByReplacingOccurrencesOfString:@"-" withString:@""];
     return uuidStr;
 }
 - (void)viewDidLoad
@@ -67,20 +72,42 @@
 	if ([[[NSUserDefaults standardUserDefaults] objectForKey:@"serverAddress"] length]) {
 		serverAddress.text = [[NSUserDefaults standardUserDefaults] objectForKey:@"serverAddress"];
 	}
+	[self broadcaseSettings:nil];
 }
 -(void)saveServerAddress{
 	if(serverAddress.text.length)
 		[[NSUserDefaults standardUserDefaults] setObject:serverAddress.text forKey:@"serverAddress"];
+}
+
+-(IBAction)broadcaseSettings:(id)sender{
+	
+	[broadcaseSettingsSession disconnectFromAllPeers];
+	broadcaseSettingsSession.available = NO;
+	broadcaseSettingsSession = nil;
+	NSString* f = imageQuality.value >= 0.99 ? @"1.0" : [NSString stringWithFormat:@"0.%d", (int)(imageQuality.value * 10)];
+	broadcaseSettingsSession = [[GKSession alloc] initWithSessionID:nil displayName:[NSString stringWithFormat:@"%@%@%@", DIRECT_SETTINGS_DISPLAY_NAME_PREFIX, f, serverAddress.text] sessionMode:GKSessionModePeer];
+	broadcaseSettingsSession.available = YES;
+}
+-(void)shutdownBoardcaseSession{
+	[broadcaseTakeActionSession disconnectFromAllPeers];
+	broadcaseTakeActionSession.available = NO;
+	broadcaseTakeActionSession = nil;
 }
 -(IBAction)send:(id)sender{
 	NSString* uuid = [self uuidString];
 	NSString* data = [NSString stringWithFormat:@"%@ TAKE %f|%@", uuid, imageQuality.value, serverAddress.text];
 	[session sendDataToAllPeers:[data dataUsingEncoding:NSUTF8StringEncoding] withDataMode:GKSendDataUnreliable error:nil];
 	[session sendDataToAllPeers:[data dataUsingEncoding:NSUTF8StringEncoding] withDataMode:GKSendDataReliable error:nil];
+	
+	broadcaseTakeActionSession = [[GKSession alloc] initWithSessionID:nil displayName:[NSString stringWithFormat:@"%@%@", DIRECT_TAKE_DISPLAY_NAME_PREFIX, uuid] sessionMode:GKSessionModePeer];
+	broadcaseTakeActionSession.available = YES;
+	[self performSelector:@selector(shutdownBoardcaseSession) withObject:nil afterDelay:2.0];
 }
 -(void)connectPeer:(NSString*)peerID{
-	[session connectToPeer:peerID withTimeout:5];
-	[self.clients reloadData];
+	if (![[session displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME] && ![[[session displayNameForPeer:peerID] substringToIndex:[DIRECT_TAKE_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_TAKE_DISPLAY_NAME_PREFIX] && ![[[session displayNameForPeer:peerID] substringToIndex:[DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_SETTINGS_DISPLAY_NAME_PREFIX]) {
+		[session connectToPeer:peerID withTimeout:5];
+		[self.clients reloadData];
+	}
 }
 - (void)session:(GKSession *)s peer:(NSString *)peerID didChangeState:(GKPeerConnectionState)state{
 	if(state == GKPeerStateDisconnected)
@@ -91,17 +118,25 @@
     }
     else if (state == GKPeerStateAvailable)
     {
-        [self performSelector:@selector(connectPeer:) withObject:peerID afterDelay:0.5];
+		if (![[session displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME]) {
+			[self performSelector:@selector(connectPeer:) withObject:peerID afterDelay:0.5];
+		}
     }
 	[self.clients reloadData];
 }
 - (void)session:(GKSession *)s didReceiveConnectionRequestFromPeer:(NSString *)peerID{
-	
+	if (![[s displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME]) {
+		[s acceptConnectionFromPeer:peerID error:NULL];
+	}
 }
 
-- (void)session:(GKSession *)session connectionWithPeerFailed:(NSString *)peerID withError:(NSError *)error{
+- (void)session:(GKSession *)s connectionWithPeerFailed:(NSString *)peerID withError:(NSError *)error{
 	NSLog(@"connectionWithPeerFailed: %@ %@", peerID, error);
 	[self.clients reloadData];
+	// retry
+	if (![[s displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME]) {
+		[self performSelector:@selector(connectPeer:) withObject:peerID afterDelay:0.5];
+	}
 }
 - (void)session:(GKSession *)session didFailWithError:(NSError *)error{
 	NSLog(@"didFailWithError: %@", error);
