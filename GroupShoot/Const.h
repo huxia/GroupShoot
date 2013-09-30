@@ -9,8 +9,8 @@
 #ifndef GroupShoot_Const_h
 #define GroupShoot_Const_h
 
-#define DIRECT_TAKE_DISPLAY_NAME_PREFIX @"`T"
-#define DIRECT_SETTINGS_DISPLAY_NAME_PREFIX @"`S"
+#define SOURCE_PORT 8082
+#define DEST_PORT 8081
 #define SERVER_DISPLAY_NAME @"-Server"
 
 #endif

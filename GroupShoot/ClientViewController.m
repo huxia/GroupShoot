@@ -10,9 +10,8 @@
 #import "ASIFormDataRequest.h"
 #import "RegexKitLite.h"
 #import "Const.h"
-@interface ClientViewController ()<GKSessionDelegate,ASIHTTPRequestDelegate>{
+@interface ClientViewController ()<AsyncUdpSocketDelegate,ASIHTTPRequestDelegate>{
 	
-	GKSession* session;
 	AVCaptureSession* avSession;
 	AVCaptureDeviceInput* avInput;
 	AVCaptureStillImageOutput *avStillImageOutput;
@@ -20,6 +19,7 @@
 	CGFloat settingsQuality;
 	NSString* settingsAddress;
 	NSString* cachedUUID;
+	AsyncUdpSocket* socket;
 }
 
 @end
@@ -28,18 +28,31 @@
 @synthesize statusLabel, previewView, log;
 -(void)load{
 	{
-		session = [[GKSession alloc] initWithSessionID:nil displayName:nil sessionMode:GKSessionModePeer];
-		self.title = [NSString stringWithFormat:@"Connecting - %@", [session displayName]];
-		[session setDataReceiveHandler:self withContext:nil];
-		session.delegate = self;
-		session.disconnectTimeout = 5;
-		session.available = YES;
 		[self log:@"load"];
 		
-		avSession = [[AVCaptureSession alloc] init];
-		avSession.sessionPreset = AVCaptureSessionPresetMedium;
+		socket=[[AsyncUdpSocket alloc]initIPv4];
+		socket.delegate = self;
+		
+		
+		//绑定端口
+		NSError *error = nil;
+		if(![socket bindToPort:DEST_PORT error:&error] || error){
+			[self log:[NSString stringWithFormat:@"bindToPort failed %@", error]];
+		}else{
+			[self log:@"binded to port"];
+		}
+		
+		
+		if(![socket enableBroadcast:YES error:&error] || error){
+			[self log:[NSString stringWithFormat:@"enableBroadcast failed %@", error]];
+		}
+		
+		[socket receiveWithTimeout:-1 tag:0];
+		
 	}
 	{
+		avSession = [[AVCaptureSession alloc] init];
+		avSession.sessionPreset = AVCaptureSessionPresetMedium;
 		CALayer *viewLayer = self.previewView.layer;
 		NSLog(@"viewLayer = %@", viewLayer);
 		
@@ -71,10 +84,8 @@
 -(void)unload{
 	{
 		[self log:@"unload"];
-		session.delegate = nil;
-		[session disconnectFromAllPeers];
-		session.available = NO;
-		session = nil;
+		socket.delegate = nil;
+		socket = nil;
 	}
 	{
 		
@@ -113,66 +124,6 @@
 -(void)reload{
 	[self load];
 	[self unload];
-}
-//-(void)connectPeer:(NSString*)peerID{
-//	if ([[session displayNameForPeer:peerID] isEqualToString:SERVER_NAME]) {
-//		[self log:[NSString stringWithFormat:@"connect to server: %@", peerID]];
-//		[session connectToPeer:peerID withTimeout:5.0];
-//		
-//		[self performSelector:@selector(reload) withObject:nil afterDelay:1.0];
-//	}
-//	
-//}
-- (void)session:(GKSession *)s peer:(NSString *)peerID didChangeState:(GKPeerConnectionState)state{
-	if (state == GKPeerStateDisconnected) {
-		self.title = [NSString stringWithFormat:@"Disconnected - %@", [session displayName]];
-		[self log:[NSString stringWithFormat:@"disconnected with %@, reconnect...", peerID]];
-		[self performSelector:@selector(reload) withObject:nil afterDelay:1.0];
-	}else if(state == GKPeerStateConnected){
-		[self log:[NSString stringWithFormat:@"connected with %@.", peerID]];
-		self.title = [NSString stringWithFormat:@"Connected - %@", [session displayName]];
-	}else if(state == GKPeerStateAvailable){
-		NSString* displayName = [s displayNameForPeer:peerID];
-		if ([[displayName substringToIndex:[DIRECT_TAKE_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_TAKE_DISPLAY_NAME_PREFIX]) {
-			NSString* uuid = [displayName substringFromIndex:[DIRECT_TAKE_DISPLAY_NAME_PREFIX length]];
-			[self log:[NSString stringWithFormat:@"receive broadcast take command: %@", uuid]];
-			if (settingsAddress) {
-				cachedUUID = nil;
-				[self command:[NSString stringWithFormat:@"%@ TAKE %f|%@", uuid, settingsQuality, settingsAddress]];
-			}else{
-				cachedUUID = uuid;
-			}
-		}else if ([[displayName substringToIndex:[DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length]] isEqualToString:DIRECT_SETTINGS_DISPLAY_NAME_PREFIX]) {
-			int qualityLen = 3;
-			settingsQuality = [[displayName substringWithRange:NSMakeRange([DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length], qualityLen)] floatValue];
-			settingsAddress = [displayName substringFromIndex:[DIRECT_SETTINGS_DISPLAY_NAME_PREFIX length]+qualityLen];
-			[self log:[NSString stringWithFormat:@"receive settings config: %f %@", settingsQuality, settingsAddress]];
-			if (cachedUUID) {
-				
-				[self command:[NSString stringWithFormat:@"%@ TAKE %f|%@", settingsAddress, settingsQuality, settingsAddress]];
-				cachedUUID = nil;
-			}
-		}
-	}
-	
-}
-
-- (void)session:(GKSession *)s didReceiveConnectionRequestFromPeer:(NSString *)peerID{
-	[self log:[NSString stringWithFormat:@"didReceiveConnectionRequestFromPeer: %@", peerID]];
-	if ([[s displayNameForPeer:peerID] isEqualToString:SERVER_DISPLAY_NAME]) {
-		[s acceptConnectionFromPeer:peerID error:nil];
-	}
-}
-
-- (void)session:(GKSession *)s connectionWithPeerFailed:(NSString *)peerID withError:(NSError *)error{
-	[self log:[NSString stringWithFormat:@"connectionWithPeerFailed: %@ %@", peerID, error]];
-	self.title = [NSString stringWithFormat:@"Error - %@", [session displayName]];
-	//[self performSelector:@selector(connectPeer:) withObject:peerID afterDelay:0.5];
-}
-- (void)session:(GKSession *)s didFailWithError:(NSError *)error{
-	[self log:[NSString stringWithFormat:@"didFailWithError: %@", error]];
-	self.title = [NSString stringWithFormat:@"Error - %@", [session displayName]];
-	[self performSelector:@selector(reload) withObject:nil afterDelay:1.0];
 }
 -(void)upload:(NSDictionary*)info{
 	NSData* data = [info objectForKey:@"data"];
@@ -259,9 +210,20 @@
 	}
 	
 }
--(void)receiveData:(NSData *)data fromPeer:(NSString *)peer inSession:(GKSession*)session context:(void *)context
-{
-	[self command:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+- (BOOL)onUdpSocket:(AsyncUdpSocket *)sock
+     didReceiveData:(NSData *)data
+            withTag:(long)tag
+           fromHost:(NSString *)host
+               port:(UInt16)port{
+	[self log:[NSString stringWithFormat:@"didReceiveData %ld port %d", tag, port]];
+	if (port == SOURCE_PORT) {
+		[self command:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+	}
+	[socket receiveWithTimeout:-1 tag:0];
+	return YES;
+}
+- (void)onUdpSocket:(AsyncUdpSocket *)sock didNotReceiveDataWithTag:(long)tag dueToError:(NSError *)error{
+	[self log:[NSString stringWithFormat:@"didNotReceiveDataWithTag %ld %@", tag, error]];
 }
 -(void)clearReceivedData{
 	self.statusLabel.text = @"";

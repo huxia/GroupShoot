@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5108566F17F998E600E8DBB9 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5108566E17F998E600E8DBB9 /* CFNetwork.framework */; };
 		5140818117F689330009D743 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5140818017F689330009D743 /* Foundation.framework */; };
 		5140818317F689330009D743 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5140818217F689330009D743 /* CoreGraphics.framework */; };
 		5140818517F689330009D743 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5140818417F689330009D743 /* UIKit.framework */; };
@@ -27,6 +28,7 @@
 
 /* Begin PBXFileReference section */
 		5108563317F882EB00E8DBB9 /* Const.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Const.h; sourceTree = "<group>"; };
+		5108566E17F998E600E8DBB9 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		5140817D17F689330009D743 /* GroupShoot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GroupShoot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5140818017F689330009D743 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		5140818217F689330009D743 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
@@ -58,6 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5108566F17F998E600E8DBB9 /* CFNetwork.framework in Frameworks */,
 				51E57EAF17F71FE8001EF935 /* CoreMedia.framework in Frameworks */,
 				514081BE17F6B67F0009D743 /* ImageIO.framework in Frameworks */,
 				514081BC17F6B6790009D743 /* AVFoundation.framework in Frameworks */,
@@ -93,6 +96,7 @@
 		5140817F17F689330009D743 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5108566E17F998E600E8DBB9 /* CFNetwork.framework */,
 				51E57EAE17F71FE8001EF935 /* CoreMedia.framework */,
 				514081BD17F6B67F0009D743 /* ImageIO.framework */,
 				514081BB17F6B6790009D743 /* AVFoundation.framework */,
@@ -337,12 +341,14 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Developer: Huizhe Xiao (N8XLV322RS)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "GroupShoot/GroupShoot-Prefix.pch";
 				INFOPLIST_FILE = "GroupShoot/GroupShoot-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				ONLY_ACTIVE_ARCH = NO;
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = GroupShoot;
+				PROVISIONING_PROFILE = "E440B123-A2B3-49C0-91AA-2784B5D06E0E";
 				VALID_ARCHS = "armv7 armv7s";
 				WRAPPER_EXTENSION = app;
 			};
@@ -355,11 +361,14 @@
 				ARCHS = "$(ARCHS_STANDARD)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Huizhe Xiao (LS3SY7PEJR)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Huizhe Xiao (LS3SY7PEJR)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "GroupShoot/GroupShoot-Prefix.pch";
 				INFOPLIST_FILE = "GroupShoot/GroupShoot-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				PRODUCT_NAME = GroupShoot;
+				PROVISIONING_PROFILE = "76724A78-7414-4C9B-B8E1-5B86F7A3103A";
 				VALID_ARCHS = "armv7 armv7s";
 				WRAPPER_EXTENSION = app;
 			};
