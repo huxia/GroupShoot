@@ -52,7 +52,7 @@
 	}
 	{
 		avSession = [[AVCaptureSession alloc] init];
-		avSession.sessionPreset = AVCaptureSessionPresetMedium;
+		avSession.sessionPreset = AVCaptureSessionPresetPhoto;
 		CALayer *viewLayer = self.previewView.layer;
 		NSLog(@"viewLayer = %@", viewLayer);
 		
